@@ -15,7 +15,7 @@ If you find this work useful in your research, please consider citing:
 1. Install prerequsites for `Caffe` (see: [Caffe installation instructions](http://caffe.berkeleyvision.org/installation.html))
 2. Compile the `Caffe-Deep-Metric-Learning-CVPR16` Github submodule.
 
-## Training procedure 
+## Training procedure
 1. Download pretrained GoogLeNet model from [here](https://github.com/BVLC/caffe/tree/master/models/bvlc_googlenet)
 2. Download the ILSVRC12 ImageNet mean file for mean subtraction. Refer to Caffe the ImageNet examples  [here](https://github.com/BVLC/caffe/tree/master/examples/imagenet).
 3. Generate the LMDB file to convert the training set of images to the DB format. Example scripts are in `code/` directory.
@@ -42,6 +42,10 @@ You can download the Stanford Online Products dataset (2.9G) from ftp://cs.stanf
 ## Our Pre-trained Models
 You can download our pre-trained models on the Cars196 dataset, the CUB200 dataset and the Online Products dataset (265M) from ftp://cs.stanford.edu/cs/cvgl/pretrained_models.zip
 
+## Octave build instructions
+To be able to use Octave instead of Matlab to do data preparation, Octave needs to be built with 64 bit index support. This means that the underlying numerics library (such as OpenBLAS or Atlas) needs to support that as well. One combination that works is OpenBLAS + Octave.
+1. Build OpenBLAS with the following options: `BINARY64=1 INTERFACE64=1 make`
+2. Then Octave can be configured as: `./configure --enable-64 --with-blas=<path to libopenblas.a>`
+
 ## Licence
 MIT Licence
-
