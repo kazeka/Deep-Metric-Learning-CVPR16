@@ -10,11 +10,11 @@ layer {
   transform_param {
     mirror: true
     crop_size: 227
-    mean_file: "/cvgl/u/hsong/cache/imagenet_mean.binaryproto"
+    mean_file: "/home/kazeka/src/caffe/data/ilsvrc12/imagenet_mean.binaryproto"
   }
   data_param {
-    source: "/cvgl/u/hsong/ebay/cache/training_set_cars196_multilabel_m128.lmdb"
-    batch_size: 128
+    source: "/home/kazeka/data/fc_tuning/cache/training_set_multilabel_m128.lmdb"
+    batch_size: 32
     backend: LMDB
   }
 }
