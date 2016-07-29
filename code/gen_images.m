@@ -1,6 +1,6 @@
 conf = config;
 
-load([conf.root_path, 'splits.mat'], 'train_images', 'val_images');
+load([conf.root_path, 'dict.mat'], 'train_images', 'val_images');
 
 % check if all images are readible
 %check_images(conf.image_path, train_images);

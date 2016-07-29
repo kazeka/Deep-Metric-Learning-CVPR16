@@ -11,7 +11,7 @@ dict = load([conf.root_path, 'dict.mat']).d;
 train_images = load([conf.root_path, 'train_images.mat']).train_images;
 val_images = load([conf.root_path, 'val_images.mat']).val_images;
 
-class_id_breakpoint = 11318;
+class_id_breakpoint = 31;
 num_classes = length(dict);
 
 num_images = length(train_images);
@@ -19,7 +19,7 @@ image_list = train_images;
 class_list = 1:class_id_breakpoint;
 
 num_training_images = length(train_images);
-assert(num_training_images == max(dict{class_id_breakpoint}));
+% assert(num_training_images == max(dict{class_id_breakpoint}));
 
 % Build reverse look up of dictionary to get class ids of randomly sampled
 % negative images
@@ -37,29 +37,34 @@ end
 %% positive examples
 
 % count how many positive examples can be generated exhaustively.
-num_pos_pairs = 0;
-for class_id = class_list
-    this_class_num_images = length(dict{class_id});
-    fprintf('class: %d, num images: %d\n', class_id, this_class_num_images);
-    if this_class_num_images > 1
-        num_pos_pairs = num_pos_pairs + nchoosek(this_class_num_images, 2);
-    else
-        error('[ERROR] class %d has only 1 image\n', class_id);
-    end
-    num_pos_pairs = num_pos_pairs + this_class_num_images;
-end
-fprintf('mode %s has %d pos pairs\n', mode, num_pos_pairs);
+% num_pos_pairs = 0;
+% for class_id = class_list
+%     this_class_num_images = length(dict{class_id});
+%     fprintf('class: %d, num images: %d\n', class_id, this_class_num_images);
+%     if this_class_num_images > 1
+%         num_pos_pairs = num_pos_pairs + nchoosek(this_class_num_images, 2);
+%     else
+%         error('[ERROR] class %d has only 1 image\n', class_id);
+%     end
+%     num_pos_pairs = num_pos_pairs + this_class_num_images;
+% end
+% fprintf('mode %s has %d pos pairs\n', mode, num_pos_pairs);
+
+% downsample size: examples per image
+epi = 25;
 
 % construct the positive set.
-pos_pairs = zeros(num_pos_pairs, 2);
-pos_class = zeros(num_pos_pairs, 2);
+pos_pairs = zeros(epi * num_images, 2);
+pos_class = zeros(epi * num_images, 2);
 insert_idx = 1;
 for class_id = class_list
     image_ids = dict{class_id};
     this_class_num_images = length(image_ids);
-    num_combinations = nchoosek(this_class_num_images, 2);
+    num_combinations = epi * this_class_num_images;  % nchoosek(this_class_num_images, 2);
+    total_num_combinations = nchoosek(this_class_num_images, 2);
+    sample_ids = randperm(total_num_combinations)(1:num_combinations);
     pos_pairs(insert_idx:insert_idx + num_combinations-1, :) = ...
-        nchoosek(image_ids, 2);
+        nchoosek(image_ids, 2)(sample_ids, :);
     pos_class(insert_idx:insert_idx + num_combinations-1, :) = class_id;
     insert_idx = insert_idx + num_combinations;
     % add self pairs
@@ -68,11 +73,10 @@ for class_id = class_list
     pos_class(insert_idx : insert_idx + this_class_num_images-1, :) = class_id;
     insert_idx = insert_idx + this_class_num_images;
 end
-assert(num_pos_pairs == size(pos_pairs, 1), 'dim mismatch.');
+% assert(num_pos_pairs == size(pos_pairs, 1), 'dim mismatch.');
 
 %% negative examples
-
-num_negs_per_image = ceil(num_pos_pairs / num_images);
+num_negs_per_image = epi + 2; % ceil(num_pos_pairs / num_images);
 neg_pairs = zeros(num_negs_per_image * num_images, 2);
 neg_class = zeros(num_negs_per_image * num_images, 2);
 insert_idx = 1;
@@ -81,6 +85,7 @@ for class_id = class_list
     image_ids = dict{class_id};
     sampled_neg_ids = negative_sampler(num_images, image_ids, ...
         num_negs_per_image);
+    fprintf('sizes: %d, %d\n', size(neg_pairs), size(sampled_neg_ids));
     neg_pairs(insert_idx:insert_idx + length(sampled_neg_ids)-1, :) = ...
         sampled_neg_ids;
     neg_class(insert_idx:insert_idx + length(sampled_neg_ids)-1, 1) = ...
@@ -92,8 +97,10 @@ for class_id = class_list
 
     insert_idx = insert_idx + length(sampled_neg_ids);
 end
-assert(length(neg_pairs) == ...
-    num_negs_per_image * num_images, 'dim mismatch.');
+
+%fprintf('neg_pairs: %d, %d\n', length(neg_pairs), num_negs_per_image * num_images);
+% assert(length(neg_pairs) == ...
+%     num_negs_per_image * num_images, 'dim mismatch.');
 assert(length(neg_pairs) > length(pos_pairs));
 
 %% Assemble and shuffle
@@ -135,7 +142,12 @@ num_neg_samples_required = num_negs_per_image * length(image_ids);
 groundset = 1:num_images;
 groundset(image_ids) = [];
 
-sample_ids = randsample(groundset, num_neg_samples_required, false);
+fprintf('numel: %d, %d\n', numel(groundset), num_neg_samples_required);
+% sample_ids = randsample(groundset, num_neg_samples_required, false); % nchoosek(groundset, num_neg_samples_required); % (randperm(size(numel(groundset) * num_neg_samples_required, 1)),:);
+sample_ids = zeros(1, num_neg_samples_required);
+for i = 1:num_neg_samples_required
+  sample_ids(1, i) = groundset(unidrnd(length(groundset)));
+end
 
 left_image_ids = repmat(image_ids, num_negs_per_image, 1);
 
